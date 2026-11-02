@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/oxide-readonly-path-check.yml'
+      - 'app/src/main/java/com/bepinex/android/tools/OxidePathDiagnostics.java'
   workflow_dispatch:
 
 permissions:
