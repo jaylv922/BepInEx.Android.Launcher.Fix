@@ -360,7 +360,15 @@ class BootstrapActivity : Activity() {
         // Obfuscated IL2CPP exports support
         updateProgress(getString(R.string.bootstrap_status_preparing), "Checking il2cpp api map…", 75)
         val deobfuscationDir = File(bepInExDir, "Deobfuscation")
-        val il2cppMap = resolveIl2CppApiMap(gameLibDir, codeCacheScoped, useOriginalLibUnity, deobfuscationDir)
+        val il2cppMap = if (
+            BuildConfig.APPLICATION_ID.endsWith(".oxidenative") &&
+            targetPackage == "com.catsbit.oxidesurvivalisland"
+        ) {
+            BepInExLog.i("OxideNativeDiag: skipping IL2CPP export mapping and file prompt")
+            emptyMap<String, String>()
+        } else {
+            resolveIl2CppApiMap(gameLibDir, codeCacheScoped, useOriginalLibUnity, deobfuscationDir)
+        }
 
         return FusionConfig(
             targetPackage,
