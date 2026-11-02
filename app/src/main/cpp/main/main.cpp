@@ -3,6 +3,12 @@
 #include <string>
 #include <cstdlib>
 #include <android/log.h>
+#ifdef OXIDE_NATIVE_DIAGNOSTIC
+#include <link.h>
+#include <pthread.h>
+#include <cstring>
+#include <unistd.h>
+#endif
 
 #define LOG_TAG "LibMain"
 #define LOGI(fmt, ...) \
@@ -33,6 +39,93 @@ static void *unityLibHandle = nullptr;
 static void *il2cppLibHandle = nullptr;
 
 static JavaVM *g_vm;
+
+#ifdef OXIDE_NATIVE_DIAGNOSTIC
+// Observe already-loaded native code only. No hooks, memory writes or
+// attempts to resolve any obfuscated function addresses are made.
+#define OXDIAG(fmt, ...) do { \
+    __android_log_print(ANDROID_LOG_INFO, "OxideNativeDiag", fmt, ##__VA_ARGS__); \
+    if (logFile) { fprintf(logFile, "[OxideNativeDiag] " fmt "\\n", ##__VA_ARGS__); fflush(logFile); } \
+} while (0)
+
+static bool diag_relevant(const char *path) {
+    if (!path || !*path) return false;
+    const char *names[] = {"libil2cpp.so", "libunity.so", "libloader.so",
+                           "libmain.so", "libfusion.so", "libnms.so",
+                           "libpglarmor.so"};
+    for (const char *name : names) {
+        const char *slash = strrchr(path, '/');
+        if (strcmp(slash ? slash + 1 : path, name) == 0) return true;
+    }
+    return false;
+}
+
+static int diag_loaded_library(dl_phdr_info *info, size_t, void *data) {
+    auto *count = static_cast<int *>(data);
+    if (info->dlpi_name && diag_relevant(info->dlpi_name) && *count < 24) {
+        OXDIAG("loaded[%d]: %s base=%p", *count, info->dlpi_name,
+               reinterpret_cast<void *>(info->dlpi_addr));
+        ++*count;
+    }
+    return 0;
+}
+
+static void oxide_diag_snapshot(const char *stage) {
+    OXDIAG("=== %s pid=%d ===", stage, getpid());
+    int count = 0;
+    dl_iterate_phdr(diag_loaded_library, &count);
+    OXDIAG("loaded module matches=%d", count);
+    if (il2cppLibHandle) {
+        const char *names[] = {"il2cpp_init", "il2cpp_domain_get", "il2cpp_thread_attach"};
+        for (const char *name : names) {
+            dlerror();
+            void *sym = dlsym(il2cppLibHandle, name);
+            const char *err = dlerror();
+            OXDIAG("existing IL2CPP handle dlsym(%s)=%s (%s)",
+                   name, sym ? "FOUND" : "MISSING", err ? err : "ok");
+        }
+    } else {
+        OXDIAG("IL2CPP handle not initialized at snapshot");
+    }
+    FILE *maps = fopen("/proc/self/maps", "r");
+    if (!maps) {
+        OXDIAG("Cannot read /proc/self/maps");
+        return;
+    }
+    char line[1024];
+    int printed = 0;
+    while (fgets(line, sizeof(line), maps) && printed < 32) {
+        if (strstr(line, ".so") && (strstr(line, "libil2cpp") ||
+            strstr(line, "libunity") || strstr(line, "libloader") ||
+            strstr(line, "libfusion") || strstr(line, "libnms") ||
+            strstr(line, "libpglarmor"))) {
+            size_t len = strlen(line);
+            if (len && line[len - 1] == '\\n') line[len - 1] = 0;
+            OXDIAG("maps: %s", line);
+            ++printed;
+        }
+    }
+    fclose(maps);
+}
+
+static void *oxide_diag_delayed(void *) {
+    sleep(2);
+    oxide_diag_snapshot("after 2 seconds");
+    sleep(3);
+    oxide_diag_snapshot("after 5 seconds");
+    sleep(5);
+    oxide_diag_snapshot("after 10 seconds");
+    return nullptr;
+}
+
+static void oxide_diag_begin() {
+    oxide_diag_snapshot("after native-loader success");
+    pthread_t thread{};
+    int rc = pthread_create(&thread, nullptr, oxide_diag_delayed, nullptr);
+    if (rc == 0) pthread_detach(thread);
+    else OXDIAG("Diagnostic pthread_create failed: %d", rc);
+}
+#endif
 
 static std::string build_sibling_library_path(const char *libraryFileName)
 {
@@ -341,6 +434,11 @@ load(JNIEnv *env, jobject activityObject, jstring path)
     }
 
     LOGI("load: successfully loaded Unity and IL2CPP libraries")
+#ifdef OXIDE_NATIVE_DIAGNOSTIC
+    if (override_il2cpp_path.find("com.catsbit.oxidesurvivalisland") != std::string::npos) {
+        oxide_diag_begin();
+    }
+#endif
     return JNI_TRUE;
 }
 
