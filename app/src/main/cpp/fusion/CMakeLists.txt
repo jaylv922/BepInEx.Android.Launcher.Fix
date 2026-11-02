@@ -33,3 +33,6 @@ target_link_libraries(
         ${LIB_FOLDER}/libdobby.so
         ${LIB_FOLDER}/libcoreclr.so
 )
+if (OXIDE_NATIVE_DIAGNOSTIC)
+    target_compile_definitions(fusion PRIVATE OXIDE_NATIVE_DIAGNOSTIC=1)
+endif()
