@@ -20,6 +20,7 @@ val ciBuildNumber = if (isBuildInvocation) {
 
 val oxideNativeDiagnostic = project.hasProperty("oxideNativeDiagnostic")
 val oxideNoFusionControl = project.hasProperty("oxideNoFusionControl")
+val oxidePathDiagnostic = project.hasProperty("oxidePathDiagnostic")
 
 android {
     namespace = "com.bepinex.android"
@@ -53,7 +54,7 @@ android {
     }
 
     defaultConfig {
-        manifestPlaceholders["diagnosticAppLabel"] = if (oxideNoFusionControl) "OX No-Fusion Control" else if (oxideNativeDiagnostic) "OX Native Diag" else "BepInEx Launcher"
+        manifestPlaceholders["diagnosticAppLabel"] = if (oxidePathDiagnostic) "OX Path Check" else if (oxideNoFusionControl) "OX No-Fusion Control" else if (oxideNativeDiagnostic) "OX Native Diag" else "BepInEx Launcher"
     }
 
     buildFeatures {
@@ -80,7 +81,8 @@ android {
             )
         }
         debug {
-            if (oxideNoFusionControl) applicationIdSuffix = ".oxidecontrol"
+            if (oxidePathDiagnostic) applicationIdSuffix = ".oxidepaths"
+            else if (oxideNoFusionControl) applicationIdSuffix = ".oxidecontrol"
             else if (oxideNativeDiagnostic) applicationIdSuffix = ".oxidenative"
             isDebuggable = true
             isJniDebuggable = true
