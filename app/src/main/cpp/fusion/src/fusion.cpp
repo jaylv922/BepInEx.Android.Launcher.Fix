@@ -28,6 +28,23 @@ static bool execute_fusion_config(const FusionConfig &config)
     fs::path codeCache(config.codeCacheDirectory);
     fs::path gamePath = fs::path(config.bepInExDirectory).parent_path();
 
+#ifdef OXIDE_NATIVE_DIAGNOSTIC
+    // This test never modifies or hooks the game's native code.
+    // Allow Oxide's own Unity / IL2CPP loader to run so that a separate
+    // native library monitor can capture its post-startup state.
+    if (config.gameLibraryDirectory.find("com.catsbit.oxidesurvivalisland") != std::string::npos)
+    {
+        const std::string originalUnity = (gameLibsPath / "libunity.so").string();
+        const std::string originalIl2cpp = (gameLibsPath / "libil2cpp.so").string();
+        log_format(LogLevel::INFO, "OxideNativeDiag",
+                   "Read-only pass-through enabled: Unity={}, IL2CPP={}",
+                   originalUnity, originalIl2cpp);
+        libmain_set_override_unity_path(originalUnity.c_str());
+        libmain_set_override_il2cpp_path(originalIl2cpp.c_str());
+        return true;
+    }
+#endif
+
     fs::path libUnity;
     fs::path patchedLibIl2Cpp;
     if(config.isIl2Cpp2Mono){
@@ -170,6 +187,14 @@ extern "C" [[maybe_unused]] bool fusion_bootstrap_from_libmain(JNIEnv *env)
     }
 
     runtime_config = config;
+#ifdef OXIDE_NATIVE_DIAGNOSTIC
+    if (config.gameLibraryDirectory.find("com.catsbit.oxidesurvivalisland") != std::string::npos)
+    {
+        log(LogLevel::INFO, "OxideNativeDiag",
+            "BepInEx IL2CPP initialization deliberately skipped for diagnostic run.");
+        return true;
+    }
+#endif
     auto il2cpp_path = libmain_get_override_il2cpp_path();
     if (!il2cpp_initialize(il2cpp_path))
     {
