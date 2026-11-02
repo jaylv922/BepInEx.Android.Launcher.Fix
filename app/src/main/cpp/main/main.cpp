@@ -45,7 +45,7 @@ static JavaVM *g_vm;
 // attempts to resolve any obfuscated function addresses are made.
 #define OXDIAG(fmt, ...) do { \
     __android_log_print(ANDROID_LOG_INFO, "OxideNativeDiag", fmt, ##__VA_ARGS__); \
-    if (logFile) { fprintf(logFile, "[OxideNativeDiag] " fmt "\\n", ##__VA_ARGS__); fflush(logFile); } \
+    if (logFile) { fprintf(logFile, "[OxideNativeDiag] " fmt "\n", ##__VA_ARGS__); fflush(logFile); } \
 } while (0)
 
 static bool diag_relevant(const char *path) {
@@ -100,7 +100,7 @@ static void oxide_diag_snapshot(const char *stage) {
             strstr(line, "libfusion") || strstr(line, "libnms") ||
             strstr(line, "libpglarmor"))) {
             size_t len = strlen(line);
-            if (len && line[len - 1] == '\\n') line[len - 1] = 0;
+            if (len && line[len - 1] == '\n') line[len - 1] = 0;
             OXDIAG("maps: %s", line);
             ++printed;
         }
