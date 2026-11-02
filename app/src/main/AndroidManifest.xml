@@ -41,7 +41,7 @@
         android:allowBackup="false"
         android:extractNativeLibs="true"
         android:requestLegacyExternalStorage="true"
-        android:label="BepInEx Launcher"
+        android:label="${diagnosticAppLabel}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
