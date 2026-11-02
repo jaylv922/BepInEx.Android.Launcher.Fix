@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - '.github/workflows/oxide-native-diagnostic.yml'
+      - 'app/src/main/cpp/fusion/src/fusion.cpp'
+      - 'app/src/main/cpp/main/main.cpp'
+      - 'app/src/main/java/com/bepinex/android/BootstrapActivity.kt'
   workflow_dispatch:
 
 permissions:
