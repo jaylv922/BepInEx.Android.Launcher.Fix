@@ -361,7 +361,8 @@ class BootstrapActivity : Activity() {
         updateProgress(getString(R.string.bootstrap_status_preparing), "Checking il2cpp api map…", 75)
         val deobfuscationDir = File(bepInExDir, "Deobfuscation")
         val il2cppMap = if (
-            BuildConfig.APPLICATION_ID.endsWith(".oxidenative") &&
+            (BuildConfig.APPLICATION_ID.endsWith(".oxidenative") ||
+                BuildConfig.APPLICATION_ID.endsWith(".oxidecontrol")) &&
             targetPackage == "com.catsbit.oxidesurvivalisland"
         ) {
             BepInExLog.i("OxideNativeDiag: skipping IL2CPP export mapping and file prompt")
@@ -636,9 +637,19 @@ class BootstrapActivity : Activity() {
 
         try {
             NativeLibraryManager.addFusionLibrary("main")
-            NativeLibraryManager.addFusionLibrary("fusion")
-            NativeLibraryManager.addCacheLibrary("il2cpp")
-            NativeLibraryManager.addCacheLibrary("unity")
+            if (BuildConfig.APPLICATION_ID.endsWith(".oxidecontrol") &&
+                config.gamePackageId == "com.catsbit.oxidesurvivalisland") {
+                // Differential control only: no libfusion, Dobby, CoreCLR or
+                // modified Unity libraries. Keep normal Activity bridge for comparison.
+                android.system.Os.setenv(
+                    "OXIDE_NATIVE_GAME_LIB_DIR", config.gameLibraryDirectory, true
+                )
+                BepInExLog.i("OxideNativeDiag: no-Fusion control; native libraries only")
+            } else {
+                NativeLibraryManager.addFusionLibrary("fusion")
+                NativeLibraryManager.addCacheLibrary("il2cpp")
+                NativeLibraryManager.addCacheLibrary("unity")
+            }
             NativeLibraryManager.setupLibraryHooks(config)
         } catch (t: Throwable) {
             throw IllegalStateException("Failed to initialize BepInEx library routing", t)
