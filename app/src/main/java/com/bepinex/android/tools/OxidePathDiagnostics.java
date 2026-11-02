@@ -75,7 +75,7 @@ public final class OxidePathDiagnostics {
             probe("original-expected-metadata", new File(original, "il2cpp/Metadata/" + EXPECTED));
             probe("original-files-metadata", new File(original, "files/il2cpp/Metadata/" + EXPECTED));
         }
-        String redirected = Utilities.getExternalGameDirectory(GAME, "PersistentData").getAbsolutePath();
+        String redirected = new File(new File(android.os.Environment.getExternalStorageDirectory(), "BepInEx_Android/" + GAME), "PersistentData").getAbsolutePath();
         Log.i(TAG, "launcher-redirect-target=" + redirected);
         probe("redirected-folder", new File(redirected, "il2cpp/Metadata"));
         probe("redirected-expected-metadata", new File(redirected, "il2cpp/Metadata/" + EXPECTED));
