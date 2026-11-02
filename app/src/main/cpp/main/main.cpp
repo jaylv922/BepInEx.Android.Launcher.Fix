@@ -393,6 +393,32 @@ load(JNIEnv *env, jobject activityObject, jstring path)
 {
     (void) path;
 
+#if defined(OXIDE_NATIVE_DIAGNOSTIC) && defined(OXIDE_NO_FUSION_CONTROL)
+    // Read-only differential control: use the unmodified game libraries and
+    // do not load libfusion.so or .NET. This does not change game protection.
+    const char *oxideOriginalDirectory = getenv("OXIDE_NATIVE_GAME_LIB_DIR");
+    if (oxideOriginalDirectory && *oxideOriginalDirectory)
+    {
+        std::string base(oxideOriginalDirectory);
+        const std::string nativeUnityPath = base + "/libunity.so";
+        const std::string nativeIl2cppPath = base + "/libil2cpp.so";
+        OXDIAG("NO-FUSION CONTROL: native dir=%s", base.c_str());
+        if (!internal_load(env, nativeUnityPath.c_str(), &unityLibHandle)) {
+            OXDIAG("NO-FUSION CONTROL: original libunity.so load failed");
+            return JNI_FALSE;
+        }
+        if (!internal_load(env, nativeIl2cppPath.c_str(), &il2cppLibHandle)) {
+            OXDIAG("NO-FUSION CONTROL: original libil2cpp.so load failed");
+            return JNI_FALSE;
+        }
+        OXDIAG("NO-FUSION CONTROL: native libraries loaded; no Fusion/.NET or BepInEx hooks");
+        oxide_diag_begin();
+        return JNI_TRUE;
+    }
+    OXDIAG("NO-FUSION CONTROL: game library directory missing; refusing fallback");
+    return JNI_FALSE;
+#endif
+
     FusionBootstrapFromLibMain_t bootstrap = nullptr;
     if (!resolve_fusion_symbols(&bootstrap)) {
         return JNI_FALSE;
