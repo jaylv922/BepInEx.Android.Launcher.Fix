@@ -19,6 +19,7 @@ val ciBuildNumber = if (isBuildInvocation) {
 }
 
 val oxideNativeDiagnostic = project.hasProperty("oxideNativeDiagnostic")
+val oxideNoFusionControl = project.hasProperty("oxideNoFusionControl")
 
 android {
     namespace = "com.bepinex.android"
@@ -38,6 +39,7 @@ android {
         externalNativeBuild {
             cmake {
                 if (oxideNativeDiagnostic) arguments += "-DOXIDE_NATIVE_DIAGNOSTIC=ON"
+                if (oxideNoFusionControl) arguments += "-DOXIDE_NO_FUSION_CONTROL=ON"
                 // NOTE: Do NOT set -DANDROID_STL=c++_shared here: libmain.so/libfusion.so are
                 // dlopen'ed from the game's classloader namespace, which cannot resolve
                 // bare-name dependencies like libc++_shared.so. FusionCore uses the default
@@ -51,7 +53,7 @@ android {
     }
 
     defaultConfig {
-        manifestPlaceholders["diagnosticAppLabel"] = if (oxideNativeDiagnostic) "OX Native Diag" else "BepInEx Launcher"
+        manifestPlaceholders["diagnosticAppLabel"] = if (oxideNoFusionControl) "OX No-Fusion Control" else if (oxideNativeDiagnostic) "OX Native Diag" else "BepInEx Launcher"
     }
 
     buildFeatures {
@@ -78,7 +80,8 @@ android {
             )
         }
         debug {
-            if (oxideNativeDiagnostic) applicationIdSuffix = ".oxidenative"
+            if (oxideNoFusionControl) applicationIdSuffix = ".oxidecontrol"
+            else if (oxideNativeDiagnostic) applicationIdSuffix = ".oxidenative"
             isDebuggable = true
             isJniDebuggable = true
         }
