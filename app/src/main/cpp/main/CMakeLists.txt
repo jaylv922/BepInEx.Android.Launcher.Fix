@@ -17,3 +17,7 @@ target_link_libraries(
 if (OXIDE_NATIVE_DIAGNOSTIC)
     target_compile_definitions(main PRIVATE OXIDE_NATIVE_DIAGNOSTIC=1)
 endif()
+
+if (OXIDE_NO_FUSION_CONTROL)
+    target_compile_definitions(main PRIVATE OXIDE_NO_FUSION_CONTROL=1)
+endif()
