@@ -27,6 +27,7 @@ import com.bepinex.android.tools.FusionConfig
 import com.bepinex.android.tools.GlobalMetadata
 import com.bepinex.android.tools.Il2CppApiMapper
 import com.bepinex.android.tools.NativeLibraryManager
+import com.bepinex.android.tools.OxidePathDiagnostics
 import com.bepinex.android.tools.UnityBaseLibraries
 import com.bepinex.android.tools.Utilities
 import java.io.File
@@ -153,6 +154,8 @@ class BootstrapActivity : Activity() {
             failAndFinish("Failed to configure classes.", e)
             return
         }
+
+        OxidePathDiagnostics.bootstrap(gameContext, applicationContext)
 
         // 3. Resolve the game launcher activity
         val launchIntent = packageManager.getLaunchIntentForPackage(targetPackage)
@@ -362,7 +365,8 @@ class BootstrapActivity : Activity() {
         val deobfuscationDir = File(bepInExDir, "Deobfuscation")
         val il2cppMap = if (
             (BuildConfig.APPLICATION_ID.endsWith(".oxidenative") ||
-                BuildConfig.APPLICATION_ID.endsWith(".oxidecontrol")) &&
+                (BuildConfig.APPLICATION_ID.endsWith(".oxidecontrol") ||
+                 BuildConfig.APPLICATION_ID.endsWith(".oxidepaths"))) &&
             targetPackage == "com.catsbit.oxidesurvivalisland"
         ) {
             BepInExLog.i("OxideNativeDiag: skipping IL2CPP export mapping and file prompt")
@@ -637,7 +641,8 @@ class BootstrapActivity : Activity() {
 
         try {
             NativeLibraryManager.addFusionLibrary("main")
-            if (BuildConfig.APPLICATION_ID.endsWith(".oxidecontrol") &&
+            if ((BuildConfig.APPLICATION_ID.endsWith(".oxidecontrol") ||
+                 BuildConfig.APPLICATION_ID.endsWith(".oxidepaths")) &&
                 config.gamePackageId == "com.catsbit.oxidesurvivalisland") {
                 // Differential control only: no libfusion, Dobby, CoreCLR or
                 // modified Unity libraries. Keep normal Activity bridge for comparison.
