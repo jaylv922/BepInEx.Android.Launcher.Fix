@@ -37,10 +37,12 @@ public class CustomContextWrapper extends ContextWrapper {
             gameApplication.attach(new CustomContextWrapper(gameContext, fusionApplication, gameApplication));
             this.applicationContext = gameApplication;
         }
+        OxidePathDiagnostics.wrapperBefore(gameContext);
         this.getApplicationInfo().dataDir = Utilities.getExternalGameDirectory(gameContext.getPackageName(), "PersistentData").getAbsolutePath();
         // this prevents the game from resolving its own libraries
         // that way we can override them properly with our own versions
         this.getApplicationInfo().nativeLibraryDir = "";
+        OxidePathDiagnostics.wrapperAfter(gameContext);
     }
 
     public Context getOriginalActivity() {
